@@ -1,12 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:name=".RepoVistaApp"
         android:allowBackup="true"
-        android:icon="@android:drawable/sym_def_app_icon"
         android:label="RepoVista"
-        android:roundIcon="@android:drawable/sym_def_app_icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.RepoVista">
         <activity
@@ -18,4 +14,5 @@
             </intent-filter>
         </activity>
     </application>
+
 </manifest>
