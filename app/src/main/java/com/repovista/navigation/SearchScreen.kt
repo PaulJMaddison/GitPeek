@@ -46,7 +46,6 @@ fun SearchScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val repositories = viewModel.repositories.collectAsLazyPagingItems()
-    val _ = onOpenProfile
     val pullToRefreshState = rememberPullToRefreshState()
 
     Scaffold(topBar = { TopAppBar(title = { Text("Search") }) }) { innerPadding ->

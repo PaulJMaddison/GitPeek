@@ -341,6 +341,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.profileRepoItems(
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun RepoDetailScreen(
     owner: String,
     repo: String,
