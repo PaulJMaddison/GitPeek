@@ -33,3 +33,17 @@ After generating the Gradle wrapper locally, run:
 ```bash
 ./gradlew test
 ```
+
+## GitHub token setup (optional)
+
+GitHub API requests are unauthenticated by default. You can optionally provide a Personal Access Token (PAT) in the app to increase your rate limits.
+
+1. Launch the app.
+2. Tap **GitHub Token Settings**.
+3. Paste a GitHub PAT and tap **Save**.
+
+Notes:
+
+- The token is stored locally using Android DataStore Preferences.
+- Leave the token empty to clear it.
+- The app redacts the `Authorization` header from HTTP logs.
