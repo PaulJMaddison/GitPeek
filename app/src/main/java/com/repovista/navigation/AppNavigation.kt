@@ -2,19 +2,35 @@ package com.repovista.navigation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
+import com.repovista.core.model.RepoSummary
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -143,31 +159,206 @@ private fun RepoVistaNavHost(
 @Composable
 fun ProfileScreen(
     username: String,
-    onOpenRepo: (owner: String, repo: String) -> Unit
+    onOpenRepo: (owner: String, repo: String) -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+    val uiState by viewModel.uiState.collectAsState()
+    val repos = viewModel.reposPagingData.collectAsLazyPagingItems()
+    val starredRepos = viewModel.starredPagingData.collectAsLazyPagingItems()
+
+    LaunchedEffect(username) {
+        viewModel.initializeUsername(username)
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        UserHeader(
-            login = username,
-            name = "The Octocat",
-            avatarUrl = "https://github.com/$username.png",
-            bio = "GitHub mascot and open source explorer.",
-            followers = 9000,
-            following = 9,
-            publicRepos = 8
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = uiState.inputUsername,
+                    onValueChange = viewModel::onUsernameChanged,
+                    label = { Text("Username") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f)
+                )
+                Button(onClick = viewModel::loadProfileFromInput) {
+                    Text("Load Profile")
+                }
+            }
+        }
+
+        item {
+            OutlinedButton(onClick = viewModel::openTokenDialog, modifier = Modifier.fillMaxWidth()) {
+                Text("Edit token")
+            }
+        }
+
+        when {
+            uiState.isLoadingUser && uiState.user == null -> item {
+                LoadingState(message = "Loading profile")
+            }
+
+            uiState.errorMessage != null && uiState.user == null -> item {
+                ErrorState(message = uiState.errorMessage, onRetry = viewModel::retryLoadProfile)
+            }
+
+            uiState.user == null -> item {
+                EmptyState(
+                    title = "Load a GitHub profile",
+                    description = "Enter a username above to view repositories and starred projects."
+                )
+            }
+
+            else -> {
+                item {
+                    UserHeader(
+                        login = uiState.user.login,
+                        name = uiState.user.name,
+                        avatarUrl = uiState.user.avatarUrl,
+                        bio = uiState.user.bio,
+                        followers = uiState.user.followers,
+                        following = uiState.user.following,
+                        publicRepos = uiState.user.publicRepos
+                    )
+                }
+                item {
+                    if (uiState.isLoadingUser) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+                item {
+                    TabRow(selectedTabIndex = uiState.selectedTab.ordinal) {
+                        ProfileTab.entries.forEach { tab ->
+                            Tab(
+                                selected = tab == uiState.selectedTab,
+                                onClick = { viewModel.onSelectTab(tab) },
+                                text = {
+                                    Text(
+                                        when (tab) {
+                                            ProfileTab.Repos -> "Repos"
+                                            ProfileTab.Starred -> "Starred"
+                                        }
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+
+                val activeItems = if (uiState.selectedTab == ProfileTab.Repos) repos else starredRepos
+                profileRepoItems(activeItems, onOpenRepo)
+            }
+        }
+    }
+
+    if (uiState.showTokenDialog) {
+        AlertDialog(
+            onDismissRequest = viewModel::closeTokenDialog,
+            title = { Text("GitHub token") },
+            text = {
+                OutlinedTextField(
+                    value = uiState.tokenInput,
+                    onValueChange = viewModel::onTokenChanged,
+                    label = { Text("Personal access token") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                Button(onClick = viewModel::saveToken, enabled = !uiState.isSavingToken) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = viewModel::closeTokenDialog, enabled = !uiState.isSavingToken) {
+                    Text("Cancel")
+                }
+            }
         )
-        RepoListItem(
-            name = "$username/Hello-World",
-            description = "My first repository on GitHub!",
-            stars = 2400,
-            language = "Ruby",
-            ownerAvatarUrl = "https://github.com/$username.png",
-            onClick = { onOpenRepo(username, "Hello-World") }
-        )
+    }
+}
+
+private fun androidx.compose.foundation.lazy.LazyListScope.profileRepoItems(
+    repositories: androidx.paging.compose.LazyPagingItems<RepoSummary>,
+    onOpenRepo: (owner: String, repo: String) -> Unit
+) {
+    when (val refreshState = repositories.loadState.refresh) {
+        is LoadState.Loading -> {
+            item { LoadingState(message = "Loading repositories") }
+        }
+
+        is LoadState.Error -> {
+            item {
+                ErrorState(
+                    message = refreshState.error.message ?: "Failed to load repositories.",
+                    onRetry = repositories::retry
+                )
+            }
+        }
+
+        is LoadState.NotLoading -> {
+            if (repositories.itemCount == 0) {
+                item {
+                    EmptyState(
+                        title = "No repositories",
+                        description = "Nothing to show in this section yet."
+                    )
+                }
+            } else {
+                items(
+                    count = repositories.itemCount,
+                    key = { index -> repositories[index]?.id ?: index }
+                ) { index ->
+                    repositories[index]?.let { repo ->
+                        val owner = repo.fullName.substringBefore("/")
+                        val repoName = repo.fullName.substringAfter("/", missingDelimiterValue = repo.fullName)
+                        RepoListItem(
+                            name = repo.fullName,
+                            description = repo.description,
+                            stars = repo.stars,
+                            language = repo.language,
+                            ownerAvatarUrl = repo.ownerAvatarUrl,
+                            onClick = { onOpenRepo(owner, repoName) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    when (val appendState = repositories.loadState.append) {
+        is LoadState.Loading -> {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+
+        is LoadState.Error -> {
+            item {
+                ErrorState(
+                    message = appendState.error.message ?: "Failed to load more repositories.",
+                    onRetry = repositories::retry
+                )
+            }
+        }
+
+        else -> Unit
     }
 }
 
