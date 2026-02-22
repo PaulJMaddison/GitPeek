@@ -13,6 +13,9 @@ data class RepoDto(
     @Json(name = "stargazers_count") val stargazersCount: Int,
     @Json(name = "forks_count") val forksCount: Int,
     @Json(name = "open_issues_count") val openIssuesCount: Int,
+    @Json(name = "watchers_count") val watchersCount: Int? = null,
+    val topics: List<String>? = null,
+    @Json(name = "default_branch") val defaultBranch: String? = null,
     @Json(name = "html_url") val htmlUrl: String,
     @Json(name = "updated_at") val updatedAt: String,
     val owner: OwnerDto

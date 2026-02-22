@@ -1,5 +1,7 @@
 package com.repovista.navigation
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -366,20 +369,66 @@ private fun androidx.compose.foundation.lazy.LazyListScope.profileRepoItems(
 fun RepoDetailScreen(
     owner: String,
     repo: String,
-    onOpenIssues: (owner: String, repo: String) -> Unit
+    onOpenIssues: (owner: String, repo: String) -> Unit,
+    viewModel: RepoDetailViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(owner, repo) {
+        viewModel.loadRepoDetail(owner, repo)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(text = "$owner/$repo", modifier = Modifier.padding(bottom = 12.dp))
-        LoadingState(message = "Loading repository details")
-        Button(
-            onClick = { onOpenIssues(owner, repo) },
-            modifier = Modifier.padding(top = 16.dp)
-        ) {
-            Text("View Issues")
+        when {
+            uiState.isLoading && uiState.repoDetail == null -> {
+                LoadingState(message = "Loading repository details")
+            }
+
+            uiState.errorMessage != null && uiState.repoDetail == null -> {
+                ErrorState(
+                    message = uiState.errorMessage,
+                    onRetry = { viewModel.loadRepoDetail(owner, repo) }
+                )
+            }
+
+            uiState.repoDetail != null -> {
+                val repoDetail = uiState.repoDetail ?: return@Column
+                Text(text = repoDetail.fullName)
+                Text(text = repoDetail.description ?: "No description available")
+                Text(text = "⭐ Stars: ${repoDetail.stars}")
+                Text(text = "🍴 Forks: ${repoDetail.forks}")
+                Text(text = "🐞 Open issues: ${repoDetail.openIssues}")
+                Text(text = "💻 Language: ${repoDetail.language ?: "Unknown"}")
+                if (!repoDetail.topics.isNullOrEmpty()) {
+                    Text(text = "🏷️ Topics: ${repoDetail.topics.joinToString()}")
+                }
+                OutlinedButton(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(repoDetail.htmlUrl))
+                        context.startActivity(intent)
+                    }
+                ) {
+                    Text("Open on GitHub")
+                }
+                Button(
+                    onClick = { onOpenIssues(owner, repo) }
+                ) {
+                    Text("View Issues")
+                }
+            }
+
+            else -> {
+                EmptyState(
+                    title = "No repository details",
+                    description = "Try again to load this repository."
+                )
+            }
         }
     }
 }
