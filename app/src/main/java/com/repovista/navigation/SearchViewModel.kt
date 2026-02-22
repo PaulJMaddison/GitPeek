@@ -62,4 +62,8 @@ class SearchViewModel @Inject constructor(
     fun onQueryChanged(query: String) {
         _uiState.value = _uiState.value.copy(query = query)
     }
+
+    fun onSearch(query: String) {
+        onQueryChanged(query.trim())
+    }
 }

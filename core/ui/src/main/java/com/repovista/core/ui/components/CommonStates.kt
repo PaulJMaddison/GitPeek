@@ -1,5 +1,6 @@
 package com.repovista.core.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -7,12 +8,22 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -20,21 +31,25 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.repovista.core.model.Issue
 import com.repovista.core.ui.theme.RepoVistaTheme
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun LoadingState(message: String = "Loading...") {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         androidx.compose.material3.CircularProgressIndicator()
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 12.dp)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -45,37 +60,59 @@ fun ErrorState(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    EmptyState(
+        icon = {
+            Icon(
+                imageVector = Icons.Outlined.ErrorOutline,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(32.dp)
+            )
+        },
+        title = "Something went wrong",
+        message = message,
+        action = {
+            OutlinedButton(onClick = onRetry) {
+                Text("Retry")
+            }
+        },
         modifier = modifier
-            .fillMaxWidth()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = message, style = MaterialTheme.typography.bodyLarge)
-        OutlinedButton(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) {
-            Text("Retry")
-        }
-    }
+    )
 }
 
 @Composable
 fun EmptyState(
     title: String,
-    description: String,
-    modifier: Modifier = Modifier
+    message: String,
+    modifier: Modifier = Modifier,
+    icon: @Composable (() -> Unit)? = null,
+    action: @Composable (() -> Unit)? = null
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
+        icon?.let {
+            Surface(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = CircleShape,
+                tonalElevation = 2.dp
+            ) {
+                Row(modifier = Modifier.padding(16.dp)) { it() }
+            }
+        }
+        Text(title, style = MaterialTheme.typography.titleLarge)
         Text(
-            text = description,
+            text = message,
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 8.dp)
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        action?.let {
+            Row(modifier = Modifier.padding(top = 8.dp)) { it() }
+        }
     }
 }
 
@@ -88,42 +125,113 @@ fun RepoListItem(
     ownerAvatarUrl: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(12.dp)
+    contentPadding: PaddingValues = PaddingValues(14.dp)
 ) {
-    Card(onClick = onClick, modifier = modifier.fillMaxWidth()) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(contentPadding),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top
         ) {
             val ownerName = name.substringBefore("/")
             AsyncImage(
                 model = ownerAvatarUrl,
                 contentDescription = "Avatar for $ownerName",
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
             )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(name, fontWeight = FontWeight.SemiBold)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 description?.takeIf { it.isNotBlank() }?.let {
                     Text(
                         text = it,
                         style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 4.dp)
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    AssistChip(onClick = {}, label = { Text("★ $stars") })
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AssistChip(
+                        onClick = {},
+                        enabled = false,
+                        label = { Text(stars.toString()) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Star,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    )
                     language?.takeIf { it.isNotBlank() }?.let { lang ->
-                        AssistChip(onClick = {}, label = { Text(lang) })
+                        AssistChip(
+                            onClick = {},
+                            enabled = false,
+                            label = { Text(lang) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Storage,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun IssueListItem(issue: Issue, modifier: Modifier = Modifier) {
+    val createdAt = remember(issue.createdAt) {
+        DateTimeFormatter.ofPattern("MMM d, yyyy")
+            .withZone(ZoneId.systemDefault())
+            .format(issue.createdAt)
+    }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(text = issue.title, style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                AssistChip(
+                    onClick = {},
+                    enabled = false,
+                    label = { Text("#${issue.number}") }
+                )
+                AssistChip(
+                    onClick = {},
+                    enabled = false,
+                    label = { Text(issue.state.replaceFirstChar(Char::uppercase)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.BugReport,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                )
+            }
+            Text(
+                text = "by @${issue.authorLogin} • ${issue.comments} comments • $createdAt",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -140,26 +248,41 @@ fun UserHeader(
     modifier: Modifier = Modifier
 ) {
     Card(modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
                     model = avatarUrl,
                     contentDescription = "Avatar for $login",
-                    modifier = Modifier.size(64.dp)
+                    modifier = Modifier
+                        .size(70.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                 )
                 Column {
-                    Text(text = name ?: login, style = MaterialTheme.typography.titleMedium)
-                    Text(text = "@$login", style = MaterialTheme.typography.bodyMedium)
+                    Text(text = name ?: login, style = MaterialTheme.typography.titleLarge)
+                    Text(text = "@$login", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             bio?.takeIf { it.isNotBlank() }?.let {
-                Text(text = it, modifier = Modifier.padding(top = 10.dp))
+                Text(text = it, style = MaterialTheme.typography.bodyMedium)
             }
-            Text(
-                text = "$followers followers · $following following · $publicRepos repos",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 10.dp)
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatChip("Followers", followers)
+                StatChip("Following", following)
+                StatChip("Repos", publicRepos)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatChip(label: String, value: Int) {
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.secondaryContainer
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(value.toString(), style = MaterialTheme.typography.titleSmall)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
         }
     }
 }
@@ -185,8 +308,34 @@ private fun RepoListItemPreview() {
 private fun EmptyStatePreview() {
     RepoVistaTheme {
         EmptyState(
-            title = "No items",
-            description = "Try refreshing to load the latest data."
+            title = "Search GitHub repositories",
+            message = "Find repositories, explore details, and track issues.",
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.Storage,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun IssueListItemPreview() {
+    RepoVistaTheme {
+        IssueListItem(
+            issue = Issue(
+                id = 1L,
+                number = 128,
+                title = "Crash on startup in dark mode",
+                state = "open",
+                authorLogin = "octocat",
+                comments = 4,
+                createdAt = java.time.Instant.now()
+            )
         )
     }
 }
