@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -137,45 +135,6 @@ private fun RepoVistaNavHost(
             IssuesScreen(
                 owner = backStack.arguments?.getString("owner").orEmpty(),
                 repo = backStack.arguments?.getString("repo").orEmpty()
-            )
-        }
-    }
-}
-
-@Composable
-fun SearchScreen(
-    onOpenProfile: (String) -> Unit,
-    onOpenRepo: (owner: String, repo: String) -> Unit
-) {
-    val sampleRepos = listOf(
-        Triple("google/accompanist", "A collection of extension libraries for Jetpack Compose", 6600),
-        Triple("android/compose-samples", "Official Jetpack Compose samples", 18600)
-    )
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item {
-            Text("Search", modifier = Modifier.padding(bottom = 4.dp))
-        }
-        item {
-            Button(onClick = { onOpenProfile("octocat") }) {
-                Text("Open @octocat profile")
-            }
-        }
-        items(sampleRepos) { repo ->
-            val (name, description, stars) = repo
-            val owner = name.substringBefore("/")
-            val repoName = name.substringAfter("/")
-            RepoListItem(
-                name = name,
-                description = description,
-                stars = stars,
-                language = "Kotlin",
-                ownerAvatarUrl = "https://github.com/$owner.png",
-                onClick = { onOpenRepo(owner, repoName) }
             )
         }
     }
