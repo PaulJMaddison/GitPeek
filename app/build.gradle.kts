@@ -1,7 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
 }
 
@@ -52,6 +53,7 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(project(":core:network"))
     implementation(project(":core:database"))
+    implementation(project(":core:model"))
     implementation(project(":feature:search"))
     implementation(project(":feature:profile"))
     implementation(project(":feature:repodetail"))
@@ -68,9 +70,12 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
+    implementation(libs.retrofit)
+    implementation(libs.coil.compose)
+    implementation(libs.material)
 
     implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)
     testImplementation(libs.truth)
@@ -78,6 +83,3 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
 
-kapt {
-    correctErrorTypes = true
-}

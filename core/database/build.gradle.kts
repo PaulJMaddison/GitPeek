@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
 }
 
@@ -28,13 +28,12 @@ dependencies {
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.paging)
+    implementation(libs.androidx.paging.runtime)
     implementation(libs.hilt.android)
-    kapt(libs.androidx.room.compiler)
-    kapt(libs.hilt.compiler)
+    ksp(libs.androidx.room.compiler)
+    ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)
 }
 
-kapt {
-    correctErrorTypes = true
-}

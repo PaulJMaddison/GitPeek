@@ -62,10 +62,10 @@ class UserReposRemoteMediator(
 
             appDatabase.withTransaction {
                 if (loadType == LoadType.REFRESH) {
-                    userRepoDao().clearRepos(normalizedUsername)
+                    appDatabase.userRepoDao().clearRepos(normalizedUsername)
                 }
-                userRepoDao().insertRepos(repos)
-                cacheMetadataDao().upsert(
+                appDatabase.userRepoDao().insertRepos(repos)
+                appDatabase.cacheMetadataDao().upsert(
                     CacheMetadataEntity(
                         key = cacheKey,
                         nextPage = nextPage,

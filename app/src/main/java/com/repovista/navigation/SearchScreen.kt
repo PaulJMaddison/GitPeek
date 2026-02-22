@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -36,6 +37,7 @@ import com.repovista.core.ui.components.LoadingState
 import com.repovista.core.ui.components.RepoListItem
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun SearchScreen(
     onOpenProfile: (String) -> Unit,
     onOpenRepo: (owner: String, repo: String) -> Unit,

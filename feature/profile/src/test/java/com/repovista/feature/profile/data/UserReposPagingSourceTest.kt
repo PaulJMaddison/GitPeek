@@ -9,12 +9,13 @@ import com.repovista.core.network.dto.OwnerDto
 import com.repovista.core.network.dto.RepoDto
 import com.repovista.core.network.dto.SearchRepositoriesResponseDto
 import com.repovista.core.network.dto.UserDto
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
 class UserReposPagingSourceTest {
 
     @Test
-    suspend fun `load returns mapped page on success`() {
+    fun `load returns mapped page on success`() = runTest {
         val repos = listOf(
             repoDto(id = 1L, fullName = "octocat/one"),
             repoDto(id = 2L, fullName = "octocat/two")
@@ -39,7 +40,7 @@ class UserReposPagingSourceTest {
     }
 
     @Test
-    suspend fun `load returns network data exception on failure`() {
+    fun `load returns network data exception on failure`() = runTest {
         val api = FakeGitHubApi(userReposThrowable = IllegalStateException("boom"))
         val pagingSource = UserReposPagingSource(api, username = "octocat", pageSize = 30)
 
