@@ -4,9 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -17,8 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.repovista.core.ui.theme.RepoVistaTheme
 
 @Composable
 fun LoadingState(message: String = "Loading...") {
@@ -95,9 +97,10 @@ fun RepoListItem(
                 .padding(contentPadding),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            val ownerName = name.substringBefore("/")
             AsyncImage(
                 model = ownerAvatarUrl,
-                contentDescription = null,
+                contentDescription = "Avatar for $ownerName",
                 modifier = Modifier.size(48.dp)
             )
             Column(modifier = Modifier.weight(1f)) {
@@ -141,7 +144,7 @@ fun UserHeader(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 AsyncImage(
                     model = avatarUrl,
-                    contentDescription = null,
+                    contentDescription = "Avatar for $login",
                     modifier = Modifier.size(64.dp)
                 )
                 Column {
@@ -158,5 +161,32 @@ fun UserHeader(
                 modifier = Modifier.padding(top = 10.dp)
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RepoListItemPreview() {
+    RepoVistaTheme {
+        RepoListItem(
+            name = "octocat/Hello-World",
+            description = "My first repository on GitHub!",
+            stars = 42,
+            language = "Kotlin",
+            ownerAvatarUrl = "",
+            onClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun EmptyStatePreview() {
+    RepoVistaTheme {
+        EmptyState(
+            title = "No items",
+            description = "Try refreshing to load the latest data."
+        )
     }
 }
