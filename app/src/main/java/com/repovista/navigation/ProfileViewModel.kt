@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.repovista.core.database.AppDatabase
 import com.repovista.core.model.GitHubUser
 import com.repovista.core.model.RepoSummary
 import com.repovista.core.network.api.GitHubApi
@@ -47,11 +48,12 @@ data class ProfileUiState(
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     gitHubApi: GitHubApi,
+    appDatabase: AppDatabase,
     private val tokenRepository: TokenRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val profileRepository = ProfileRepositoryImpl(gitHubApi)
+    private val profileRepository = ProfileRepositoryImpl(gitHubApi, appDatabase)
     private val getUserUseCase = GetUserUseCase(profileRepository)
     private val getUserReposPagedUseCase = GetUserReposPagedUseCase(profileRepository)
     private val getStarredReposPagedUseCase = GetStarredReposPagedUseCase(profileRepository)

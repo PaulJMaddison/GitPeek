@@ -18,6 +18,7 @@ GitPeek is designed for fast GitHub exploration on mobile. Whether you're scouti
 - 🔎 **Repository Search** with paginated results
 - 👤 **GitHub Profile View** for user details
 - 📦 **User Repositories** listing (paged)
+- 💾 **Offline-first paging cache** for Search + User Repositories (Room + RemoteMediator, 30-minute TTL)
 - ⭐ **Starred Repositories** listing (paged)
 - 📄 **Repository Details** (owner, stats, metadata)
 - 🐞 **Issues Browser** for open project issues
@@ -34,7 +35,7 @@ GitPeek is designed for fast GitHub exploration on mobile. Whether you're scouti
 - **DI:** Hilt
 - **Networking:** Retrofit + OkHttp
 - **Pagination:** Paging 3
-- **Persistence:** DataStore (for token storage)
+- **Persistence:** Room (offline cache for repository paging) + DataStore (token storage)
 - **Build system:** Gradle Kotlin DSL + Version Catalog
 
 ---
@@ -61,6 +62,12 @@ GitPeek is designed for fast GitHub exploration on mobile. Whether you're scouti
                     \                         /
                      \                       /
                       +---------+-----------+
+                                |
+                       +--------v---------+
+                       |  core:database   |
+                       | Room cache +     |
+                       | cache metadata   |
+                       +--------+---------+
                                 |
                        +--------v---------+
                        |   core:network   |
@@ -123,6 +130,17 @@ Run:
 ./gradlew test
 ./gradlew assembleDebug
 ```
+
+
+## 🧠 Offline-first Paging (Search + User Repos)
+
+GitPeek now uses **Room + Paging 3 RemoteMediator** for repository search and user repository lists.
+
+- Cached pages are shown instantly from local DB when available.
+- Remote refresh runs in the background and updates cached content.
+- Cache entries are invalidated after **30 minutes**.
+- If API calls fail, previously cached pages remain available (cache is not wiped on errors).
+- UI still consumes `PagingData<RepoSummary>` the same way as before.
 
 ## Community
 

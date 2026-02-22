@@ -29,6 +29,7 @@ include(
     ":core:ui",
     ":core:network",
     ":core:model",
+    ":core:database",
     ":feature:search",
     ":feature:profile",
     ":feature:repodetail",
