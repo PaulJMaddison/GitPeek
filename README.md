@@ -1,5 +1,9 @@
 # RepoVista Android Scaffold
 
+[![CI](https://img.shields.io/badge/CI-passing-placeholder?logo=githubactions)](https://github.com/your-org/your-repo/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Contributing](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 Multi-module Android scaffold using **Gradle Kotlin DSL** and **Version Catalog**.
 
 ## Modules
@@ -28,11 +32,18 @@ The launcher activity renders a simple Compose message:
 
 ## Sanity check
 
-After generating the Gradle wrapper locally, run:
+Run:
 
 ```bash
 ./gradlew test
+./gradlew assembleDebug
 ```
+
+## Community
+
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
+- Follow our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+- Use GitHub issue templates for bugs and feature requests.
 
 ## GitHub token setup (optional)
 
