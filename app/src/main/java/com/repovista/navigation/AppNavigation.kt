@@ -22,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.remember
@@ -168,6 +169,7 @@ private fun RepoVistaNavHost(
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun ProfileScreen(
     username: String,
     onOpenRepo: (owner: String, repo: String) -> Unit,
@@ -228,7 +230,7 @@ fun ProfileScreen(
             }
 
             uiState.errorMessage != null && uiState.user == null -> item {
-                ErrorState(message = uiState.errorMessage, onRetry = viewModel::retryLoadProfile)
+                ErrorState(message = uiState.errorMessage ?: "Unknown error", onRetry = viewModel::retryLoadProfile)
             }
 
             uiState.user == null -> item {
@@ -241,13 +243,13 @@ fun ProfileScreen(
             else -> {
                 item {
                     UserHeader(
-                        login = uiState.user.login,
-                        name = uiState.user.name,
-                        avatarUrl = uiState.user.avatarUrl,
-                        bio = uiState.user.bio,
-                        followers = uiState.user.followers,
-                        following = uiState.user.following,
-                        publicRepos = uiState.user.publicRepos
+                        login = (uiState.user ?: return@item).login,
+                        name = (uiState.user ?: return@item).name,
+                        avatarUrl = (uiState.user ?: return@item).avatarUrl,
+                        bio = (uiState.user ?: return@item).bio,
+                        followers = (uiState.user ?: return@item).followers,
+                        following = (uiState.user ?: return@item).following,
+                        publicRepos = (uiState.user ?: return@item).publicRepos
                     )
                 }
                 item {
@@ -412,7 +414,7 @@ fun RepoDetailScreen(
 
             uiState.errorMessage != null && uiState.repoDetail == null -> {
                 ErrorState(
-                    message = uiState.errorMessage,
+                    message = uiState.errorMessage ?: "Unknown error",
                     onRetry = { viewModel.loadRepoDetail(owner, repo) }
                 )
             }
@@ -425,8 +427,9 @@ fun RepoDetailScreen(
                 Text(text = "🍴 Forks: ${repoDetail.forks}")
                 Text(text = "🐞 Open issues: ${repoDetail.openIssues}")
                 Text(text = "💻 Language: ${repoDetail.language ?: "Unknown"}")
-                if (!repoDetail.topics.isNullOrEmpty()) {
-                    Text(text = "🏷️ Topics: ${repoDetail.topics.joinToString()}")
+                val topics = repoDetail.topics
+                if (!topics.isNullOrEmpty()) {
+                    Text(text = "🏷️ Topics: ${topics.joinToString()}")
                 }
                 OutlinedButton(
                     onClick = {
@@ -454,6 +457,7 @@ fun RepoDetailScreen(
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun IssuesScreen(
     owner: String,
     repo: String,

@@ -62,10 +62,10 @@ class SearchReposRemoteMediator(
 
             appDatabase.withTransaction {
                 if (loadType == LoadType.REFRESH) {
-                    searchRepoDao().clearRepos(normalizedQuery)
+                    appDatabase.searchRepoDao().clearRepos(normalizedQuery)
                 }
-                searchRepoDao().insertRepos(repos)
-                cacheMetadataDao().upsert(
+                appDatabase.searchRepoDao().insertRepos(repos)
+                appDatabase.cacheMetadataDao().upsert(
                     CacheMetadataEntity(
                         key = cacheKey,
                         nextPage = nextPage,
