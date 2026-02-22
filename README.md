@@ -1,4 +1,4 @@
-# GitPeek (RepoVista)
+# GitPeek
 
 > Discover repositories, explore developer profiles, and inspect project activity from a modern Android app built with Jetpack Compose.
 
