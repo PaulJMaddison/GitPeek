@@ -15,9 +15,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,93 +43,100 @@ fun SearchScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val repositories = viewModel.repositories.collectAsLazyPagingItems()
+    val pullToRefreshState = rememberPullToRefreshState()
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    PullToRefreshBox(
+        state = pullToRefreshState,
+        isRefreshing = repositories.loadState.refresh is LoadState.Loading,
+        onRefresh = repositories::refresh
     ) {
-        item {
-            OutlinedTextField(
-                value = uiState.query,
-                onValueChange = viewModel::onQueryChanged,
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = { Text("Search repositories") },
-                placeholder = { Text("e.g. android compose") }
-            )
-        }
-
-        when (val refreshState = repositories.loadState.refresh) {
-            is LoadState.Loading -> {
-                item { LoadingState(message = "Searching repositories") }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                OutlinedTextField(
+                    value = uiState.query,
+                    onValueChange = viewModel::onQueryChanged,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Search repositories") },
+                    placeholder = { Text("e.g. android compose") }
+                )
             }
 
-            is LoadState.Error -> {
-                item {
-                    ErrorState(
-                        message = refreshState.error.message ?: "Failed to search repositories.",
-                        onRetry = repositories::retry
-                    )
+            when (val refreshState = repositories.loadState.refresh) {
+                is LoadState.Loading -> {
+                    item { LoadingState(message = "Searching repositories") }
                 }
-            }
 
-            is LoadState.NotLoading -> {
-                if (uiState.query.isBlank()) {
+                is LoadState.Error -> {
                     item {
-                        EmptyState(
-                            title = "Start searching",
-                            description = "Type a repository name to discover projects."
+                        ErrorState(
+                            message = refreshState.error.toUserMessage("Failed to search repositories."),
+                            onRetry = repositories::retry
                         )
                     }
-                } else if (repositories.itemCount == 0) {
-                    item {
-                        EmptyState(
-                            title = "No repositories found",
-                            description = "Try a different keyword or broaden your query."
-                        )
-                    }
-                } else {
-                    items(
-                        count = repositories.itemCount,
-                        key = { index -> repositories[index]?.id ?: index }
-                    ) { index ->
-                        repositories[index]?.let { repo ->
-                            SearchResultItem(
-                                repo = repo,
-                                onOpenProfile = onOpenProfile,
-                                onOpenRepo = onOpenRepo
+                }
+
+                is LoadState.NotLoading -> {
+                    if (uiState.query.isBlank()) {
+                        item {
+                            EmptyState(
+                                title = "Start searching",
+                                description = "Type a repository name to discover projects."
                             )
+                        }
+                    } else if (repositories.itemCount == 0) {
+                        item {
+                            EmptyState(
+                                title = "No repositories found",
+                                description = "Try a different keyword or broaden your query."
+                            )
+                        }
+                    } else {
+                        items(
+                            count = repositories.itemCount,
+                            key = { index -> repositories[index]?.id ?: index }
+                        ) { index ->
+                            repositories[index]?.let { repo ->
+                                SearchResultItem(
+                                    repo = repo,
+                                    onOpenProfile = onOpenProfile,
+                                    onOpenRepo = onOpenRepo
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
 
-        when (val appendState = repositories.loadState.append) {
-            is LoadState.Loading -> {
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator()
+            when (val appendState = repositories.loadState.append) {
+                is LoadState.Loading -> {
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
                     }
                 }
-            }
 
-            is LoadState.Error -> {
-                item {
-                    ErrorState(
-                        message = appendState.error.message ?: "Failed to load more results.",
-                        onRetry = repositories::retry
-                    )
+                is LoadState.Error -> {
+                    item {
+                        ErrorState(
+                            message = appendState.error.toUserMessage("Failed to load more results."),
+                            onRetry = repositories::retry
+                        )
+                    }
                 }
-            }
 
-            else -> Unit
+                else -> Unit
+            }
         }
     }
 }
@@ -153,7 +162,7 @@ private fun SearchResultItem(
         ) {
             AsyncImage(
                 model = repo.ownerAvatarUrl,
-                contentDescription = null,
+                contentDescription = "Avatar for $owner",
                 modifier = Modifier.size(28.dp)
             )
             Text(

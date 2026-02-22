@@ -22,6 +22,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -49,6 +52,7 @@ import com.repovista.core.ui.components.ErrorState
 import com.repovista.core.ui.components.LoadingState
 import com.repovista.core.ui.components.RepoListItem
 import com.repovista.core.ui.components.UserHeader
+import com.repovista.core.ui.theme.RepoVistaTheme
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -62,13 +66,13 @@ private val bottomDestinations = listOf(
 sealed class Routes(val route: String) {
     data object Search : Routes("search")
     data object Profile : Routes("profile/{username}") {
-        fun template(username: String): String = "profile/$username"
+        fun template(username: String): String = "profile/${Uri.encode(username)}"
     }
     data object RepoDetail : Routes("repo/{owner}/{repo}") {
-        fun template(owner: String, repo: String): String = "repo/$owner/$repo"
+        fun template(owner: String, repo: String): String = "repo/${Uri.encode(owner)}/${Uri.encode(repo)}"
     }
     data object Issues : Routes("issues/{owner}/{repo}") {
-        fun template(owner: String, repo: String): String = "issues/$owner/$repo"
+        fun template(owner: String, repo: String): String = "issues/${Uri.encode(owner)}/${Uri.encode(repo)}"
     }
 }
 
@@ -129,7 +133,7 @@ private fun RepoVistaNavHost(
             route = Routes.Profile.route,
             arguments = listOf(navArgument("username") { type = NavType.StringType })
         ) { backStack ->
-            val username = backStack.arguments?.getString("username").orEmpty()
+            val username = Uri.decode(backStack.arguments?.getString("username").orEmpty())
             ProfileScreen(
                 username = username,
                 onOpenRepo = { owner, repo -> navController.navigate(Routes.RepoDetail.template(owner, repo)) }
@@ -143,8 +147,8 @@ private fun RepoVistaNavHost(
             )
         ) { backStack ->
             RepoDetailScreen(
-                owner = backStack.arguments?.getString("owner").orEmpty(),
-                repo = backStack.arguments?.getString("repo").orEmpty(),
+                owner = Uri.decode(backStack.arguments?.getString("owner").orEmpty()),
+                repo = Uri.decode(backStack.arguments?.getString("repo").orEmpty()),
                 onOpenIssues = { owner, repo -> navController.navigate(Routes.Issues.template(owner, repo)) }
             )
         }
@@ -156,8 +160,8 @@ private fun RepoVistaNavHost(
             )
         ) { backStack ->
             IssuesScreen(
-                owner = backStack.arguments?.getString("owner").orEmpty(),
-                repo = backStack.arguments?.getString("repo").orEmpty()
+                owner = Uri.decode(backStack.arguments?.getString("owner").orEmpty()),
+                repo = Uri.decode(backStack.arguments?.getString("repo").orEmpty())
             )
         }
     }
@@ -177,11 +181,22 @@ fun ProfileScreen(
         viewModel.initializeUsername(username)
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    PullToRefreshBox(
+        state = pullToRefreshState,
+        isRefreshing = uiState.isLoadingUser,
+        onRefresh = {
+            viewModel.retryLoadProfile()
+            repos.refresh()
+            starredRepos.refresh()
+        }
     ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -268,6 +283,7 @@ fun ProfileScreen(
                 profileRepoItems(activeItems, onOpenRepo)
             }
         }
+        }
     }
 
     if (uiState.showTokenDialog) {
@@ -308,7 +324,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.profileRepoItems(
         is LoadState.Error -> {
             item {
                 ErrorState(
-                    message = refreshState.error.message ?: "Failed to load repositories.",
+                    message = refreshState.error.toUserMessage("Failed to load repositories."),
                     onRetry = repositories::retry
                 )
             }
@@ -359,7 +375,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.profileRepoItems(
         is LoadState.Error -> {
             item {
                 ErrorState(
-                    message = appendState.error.message ?: "Failed to load more repositories.",
+                    message = appendState.error.toUserMessage("Failed to load more repositories."),
                     onRetry = repositories::retry
                 )
             }
@@ -447,6 +463,8 @@ fun IssuesScreen(
     val issuesFlow = remember(owner, repo) { viewModel.issues(owner, repo) }
     val issues = issuesFlow.collectAsLazyPagingItems()
 
+    val pullToRefreshState = rememberPullToRefreshState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -459,20 +477,29 @@ fun IssuesScreen(
             IssuesFilter.entries.forEach { filter ->
                 Tab(
                     selected = uiState.selectedFilter == filter,
-                    onClick = { viewModel.onFilterChanged(filter) },
+                    onClick = {
+                        viewModel.onFilterChanged(filter)
+                        issues.refresh()
+                    },
                     text = { Text(filter.label) }
                 )
             }
         }
 
-        when (val refreshState = issues.loadState.refresh) {
+        PullToRefreshBox(
+            state = pullToRefreshState,
+            isRefreshing = issues.loadState.refresh is LoadState.Loading,
+            onRefresh = issues::refresh,
+            modifier = Modifier.weight(1f)
+        ) {
+            when (val refreshState = issues.loadState.refresh) {
             is LoadState.Loading -> {
                 LoadingState(message = "Loading issues")
             }
 
             is LoadState.Error -> {
                 ErrorState(
-                    message = refreshState.error.message ?: "Unable to load issues right now.",
+                    message = refreshState.error.toUserMessage("Unable to load issues right now."),
                     onRetry = issues::retry
                 )
             }
@@ -485,7 +512,7 @@ fun IssuesScreen(
                     )
                 } else {
                     LazyColumn(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(
@@ -512,8 +539,7 @@ fun IssuesScreen(
                             is LoadState.Error -> {
                                 item {
                                     ErrorState(
-                                        message = appendState.error.message
-                                            ?: "Unable to load more issues.",
+                                        message = appendState.error.toUserMessage("Unable to load more issues."),
                                         onRetry = issues::retry
                                     )
                                 }
@@ -523,6 +549,7 @@ fun IssuesScreen(
                         }
                     }
                 }
+            }
             }
         }
     }
@@ -543,5 +570,25 @@ private fun IssueListItem(issue: Issue) {
         Text(text = "#${issue.number} • ${issue.state.replaceFirstChar(Char::uppercase)}")
         Text(text = issue.title)
         Text(text = "by @${issue.authorLogin} • 💬 ${issue.comments} • Created $createdAt")
+    }
+}
+
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun IssueListItemPreview() {
+    RepoVistaTheme {
+        IssueListItem(
+            issue = Issue(
+                id = 1L,
+                number = 128,
+                title = "Crash on startup in dark mode",
+                state = "open",
+                authorLogin = "octocat",
+                comments = 4,
+                createdAt = java.time.Instant.now()
+            )
+        )
     }
 }
