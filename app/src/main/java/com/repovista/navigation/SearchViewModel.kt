@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.repovista.core.database.AppDatabase
 import com.repovista.core.model.RepoSummary
 import com.repovista.core.network.api.GitHubApi
 import com.repovista.feature.search.data.SearchRepositoryImpl
@@ -31,10 +32,11 @@ data class SearchUiState(
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    gitHubApi: GitHubApi
+    gitHubApi: GitHubApi,
+    appDatabase: AppDatabase
 ) : ViewModel() {
 
-    private val searchUseCase = SearchReposPagedUseCase(SearchRepositoryImpl(gitHubApi))
+    private val searchUseCase = SearchReposPagedUseCase(SearchRepositoryImpl(gitHubApi, appDatabase))
 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
