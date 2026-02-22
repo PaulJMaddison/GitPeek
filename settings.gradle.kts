@@ -1,5 +1,6 @@
 pluginManagement {
     repositories {
+        maven("https://dl.google.com/dl/android/maven2/")
         google()
         mavenCentral()
         gradlePluginPortal()
@@ -18,6 +19,7 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        maven("https://dl.google.com/dl/android/maven2/")
         google()
         mavenCentral()
     }
