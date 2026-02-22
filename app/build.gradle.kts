@@ -50,6 +50,7 @@ android {
 
 dependencies {
     implementation(project(":core:ui"))
+    implementation(project(":core:network"))
     implementation(project(":feature:search"))
     implementation(project(":feature:profile"))
     implementation(project(":feature:repodetail"))

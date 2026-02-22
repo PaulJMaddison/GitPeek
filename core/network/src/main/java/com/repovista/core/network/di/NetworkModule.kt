@@ -3,7 +3,8 @@ package com.repovista.core.network.di
 import com.repovista.core.network.BuildConfig
 import com.repovista.core.network.api.GitHubApi
 import com.repovista.core.network.auth.AuthInterceptor
-import com.repovista.core.network.auth.InMemoryTokenProvider
+import com.repovista.core.network.auth.DataStoreTokenRepository
+import com.repovista.core.network.auth.TokenRepository
 import com.repovista.core.network.auth.TokenProvider
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -26,7 +27,11 @@ abstract class NetworkBindings {
 
     @Binds
     @Singleton
-    abstract fun bindTokenProvider(tokenProvider: InMemoryTokenProvider): TokenProvider
+    abstract fun bindTokenProvider(tokenRepository: DataStoreTokenRepository): TokenProvider
+
+    @Binds
+    @Singleton
+    abstract fun bindTokenRepository(tokenRepository: DataStoreTokenRepository): TokenRepository
 }
 
 @Module
@@ -49,6 +54,7 @@ object NetworkModule {
             } else {
                 HttpLoggingInterceptor.Level.NONE
             }
+            redactHeader("Authorization")
         }
 
     @Provides
