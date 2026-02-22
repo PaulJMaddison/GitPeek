@@ -7,6 +7,6 @@ import kotlinx.coroutines.flow.Flow
 class GetIssuesPagedUseCase(
     private val issuesRepository: IssuesRepository
 ) {
-    operator fun invoke(owner: String, repo: String): Flow<PagingData<Issue>> =
-        issuesRepository.getIssuesPaged(owner, repo)
+    operator fun invoke(owner: String, repo: String, state: String): Flow<PagingData<Issue>> =
+        issuesRepository.getIssuesPaged(owner, repo, state)
 }

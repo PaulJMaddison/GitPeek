@@ -46,6 +46,7 @@ interface GitHubApi {
     suspend fun listRepositoryIssues(
         @Path("owner") owner: String,
         @Path("repo") repository: String,
+        @Query("state") state: String,
         @Query("page") page: Int,
         @Query("per_page") perPage: Int
     ): List<IssueDto>

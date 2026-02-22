@@ -14,11 +14,11 @@ class IssuesRepositoryImpl(
     private val gitHubApi: GitHubApi
 ) : IssuesRepository {
 
-    override fun getIssuesPaged(owner: String, repo: String): Flow<PagingData<Issue>> =
+    override fun getIssuesPaged(owner: String, repo: String, state: String): Flow<PagingData<Issue>> =
         Pager(
             config = PagingConfig(pageSize = DEFAULT_PAGE_SIZE),
             pagingSourceFactory = {
-                IssuesPagingSource(gitHubApi, owner, repo, DEFAULT_PAGE_SIZE)
+                IssuesPagingSource(gitHubApi, owner, repo, state, DEFAULT_PAGE_SIZE)
             }
         ).flow
 }

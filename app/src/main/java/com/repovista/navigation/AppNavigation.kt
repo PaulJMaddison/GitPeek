@@ -22,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.repovista.core.model.Issue
 import com.repovista.core.model.RepoSummary
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -47,6 +49,8 @@ import com.repovista.core.ui.components.ErrorState
 import com.repovista.core.ui.components.LoadingState
 import com.repovista.core.ui.components.RepoListItem
 import com.repovista.core.ui.components.UserHeader
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 private data class BottomDestination(val label: String, val route: String)
 
@@ -434,15 +438,110 @@ fun RepoDetailScreen(
 }
 
 @Composable
-fun IssuesScreen(owner: String, repo: String) {
+fun IssuesScreen(
+    owner: String,
+    repo: String,
+    viewModel: IssuesViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val issuesFlow = remember(owner, repo) { viewModel.issues(owner, repo) }
+    val issues = issuesFlow.collectAsLazyPagingItems()
+
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(text = "Issues for $owner/$repo")
-        ErrorState(message = "Unable to load issues right now.", onRetry = {})
-        EmptyState(title = "No issues", description = "This repository has no open issues.")
+
+        TabRow(selectedTabIndex = uiState.selectedFilter.ordinal) {
+            IssuesFilter.entries.forEach { filter ->
+                Tab(
+                    selected = uiState.selectedFilter == filter,
+                    onClick = { viewModel.onFilterChanged(filter) },
+                    text = { Text(filter.label) }
+                )
+            }
+        }
+
+        when (val refreshState = issues.loadState.refresh) {
+            is LoadState.Loading -> {
+                LoadingState(message = "Loading issues")
+            }
+
+            is LoadState.Error -> {
+                ErrorState(
+                    message = refreshState.error.message ?: "Unable to load issues right now.",
+                    onRetry = issues::retry
+                )
+            }
+
+            is LoadState.NotLoading -> {
+                if (issues.itemCount == 0) {
+                    EmptyState(
+                        title = "No issues",
+                        description = "No ${uiState.selectedFilter.label.lowercase()} issues found for this repository."
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(
+                            count = issues.itemCount,
+                            key = { index -> issues[index]?.id ?: index }
+                        ) { index ->
+                            issues[index]?.let { issue ->
+                                IssueListItem(issue = issue)
+                            }
+                        }
+
+                        when (val appendState = issues.loadState.append) {
+                            is LoadState.Loading -> {
+                                item {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        CircularProgressIndicator()
+                                    }
+                                }
+                            }
+
+                            is LoadState.Error -> {
+                                item {
+                                    ErrorState(
+                                        message = appendState.error.message
+                                            ?: "Unable to load more issues.",
+                                        onRetry = issues::retry
+                                    )
+                                }
+                            }
+
+                            else -> Unit
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun IssueListItem(issue: Issue) {
+    val createdAt = remember(issue.createdAt) {
+        DateTimeFormatter.ofPattern("MMM d, yyyy")
+            .withZone(ZoneId.systemDefault())
+            .format(issue.createdAt)
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(text = "#${issue.number} • ${issue.state.replaceFirstChar(Char::uppercase)}")
+        Text(text = issue.title)
+        Text(text = "by @${issue.authorLogin} • 💬 ${issue.comments} • Created $createdAt")
     }
 }

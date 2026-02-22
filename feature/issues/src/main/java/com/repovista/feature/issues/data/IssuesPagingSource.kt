@@ -12,6 +12,7 @@ class IssuesPagingSource(
     private val gitHubApi: GitHubApi,
     private val owner: String,
     private val repo: String,
+    private val state: String,
     private val pageSize: Int
 ) : PagingSource<Int, Issue>() {
 
@@ -24,7 +25,7 @@ class IssuesPagingSource(
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Issue> {
         val page = params.key ?: 1
         return try {
-            val issues = gitHubApi.listRepositoryIssues(owner, repo, page, pageSize)
+            val issues = gitHubApi.listRepositoryIssues(owner, repo, state, page, pageSize)
                 .withoutPullRequests()
                 .mapWith(IssueMapper)
             LoadResult.Page(
