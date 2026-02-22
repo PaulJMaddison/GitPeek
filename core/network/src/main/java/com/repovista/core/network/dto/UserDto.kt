@@ -7,6 +7,7 @@ import com.squareup.moshi.JsonClass
 data class UserDto(
     val id: Long,
     val login: String,
+    val name: String?,
     @Json(name = "avatar_url") val avatarUrl: String,
     @Json(name = "html_url") val htmlUrl: String,
     val bio: String?,
