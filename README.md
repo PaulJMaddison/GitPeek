@@ -80,6 +80,13 @@ GitPeek is designed for fast GitHub exploration on mobile. Whether you're scouti
                        | shared models    |
                        +------------------+
 ```
+# RepoVista Android Scaffold
+
+[![CI](https://img.shields.io/badge/CI-passing-placeholder?logo=githubactions)](https://github.com/your-org/your-repo/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Contributing](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+Multi-module Android scaffold using **Gradle Kotlin DSL** and **Version Catalog**.
 
 ---
 
@@ -110,6 +117,20 @@ cd GitPeek
 - Click **Run** on the `app` configuration
 
 ### 4) (Optional) Configure GitHub token
+Run:
+
+```bash
+./gradlew test
+./gradlew assembleDebug
+```
+
+## Community
+
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
+- Follow our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+- Use GitHub issue templates for bugs and feature requests.
+
+## GitHub token setup (optional)
 
 Unauthenticated GitHub API calls are limited. You can optionally set a Personal Access Token (PAT) in the app:
 
