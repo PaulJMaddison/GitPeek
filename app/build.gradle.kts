@@ -50,7 +50,6 @@ android {
 
 dependencies {
     implementation(project(":core:ui"))
-    implementation(project(":core:network"))
     implementation(project(":feature:search"))
     implementation(project(":feature:profile"))
     implementation(project(":feature:repodetail"))
@@ -63,11 +62,15 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(libs.truth)
+    testImplementation(libs.kotlinx.coroutines.test)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
 
